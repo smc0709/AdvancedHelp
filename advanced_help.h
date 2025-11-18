@@ -1,0 +1,42 @@
+#ifndef ADVANCED_HELP_H
+#define ADVANCED_HELP_H
+
+
+
+
+/////   INCLUDES   /////
+#include <Windows.h>
+#include <stdbool.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+
+
+
+/////   DEFINES   /////
+
+#define MAX_NODE_LEVEL 5
+#define NODE_LEVEL_CHAR '\t'
+#define NODE_START_CHAR '\0'	// If null (= '\0'), then every new line will be interpreted as a new node (e.g. a new section or a new param), which means nodes will be one-liners
+
+#define ADVANCED_HELP_UNINITIALIZED_ERROR ("ADVANCED HELP ERROR: help not initialized.\n")
+#define ADVANCED_HELP_FORMAT_ERROR ("ADVANCED HELP ERROR: help is incorrectly formatted.\n")
+#define ADVANCED_HELP_NOMEM_ERROR ("ADVANCED HELP ERROR: not enough memory to show the help.\n")
+#define ADVANCED_HELP_KEYWORD_NOT_FOUND_INFO ("ADVANCED HELP INFO: the keyword entered could not be found.\n")
+
+#define DEFAULT_HELP_FILEPATH "help.txt"
+
+
+
+/////   FUNCTION DEFINITIONS   /////
+
+char* getAdvancedHelpForKeyword(_In_ char keyword[], _In_ void* help_ptr);
+int initAdvancedHelp(_In_ char* help_file, _Inout_ void** help_ptr);
+void freeAdvancedHelp(_In_ void** help_ptr);
+
+int strAppendRealloc(_Inout_ char** dest, _In_ const char* src);
+
+
+#endif // ADVANCED_HELP_H
