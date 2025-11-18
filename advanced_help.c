@@ -8,7 +8,7 @@
 
 /////   FUNCTION DEFINITIONS   /////
 
-char* getLineNode(_In_ char* new_line, _In_ char* current_node);
+char* getLineNode(_In_ char* new_line, _In_opt_ char* current_node);
 size_t getNodeLevel(_In_ const char* current_node);
 
 
@@ -18,33 +18,27 @@ size_t getNodeLevel(_In_ const char* current_node);
 
 // Finds all the nodes which contain the keyword and prints all parent sections and subsections like a tree
 // The returned pointer must be freed by function caller
-char* getAdvancedHelpForKeyword(_In_ char keyword[], _In_ void* help_ptr) {
-	printf("hola1\n");
+char* getAdvancedHelpForKeyword(_In_ const char* keyword, _In_ void* help_ptr) {
 	char* help_to_show = NULL;
 	char* full_help_text = NULL;
 	char* current_nodes[MAX_NODE_LEVEL] = { 0 };
 	bool current_nodes_already_included[MAX_NODE_LEVEL] = { 0 };
 
-	printf("hola2\n");
-
 	if (NULL == help_ptr) {
 		goto HELP_UNINITIALIZED_ERROR_LABEL;
 	}
-	printf("hola3\n");
 
 	full_help_text = (char*)malloc(strlen((char*)help_ptr) + 1);
 	if (NULL == full_help_text) {
 		goto HELP_NOMEM_ERROR_LABEL;
 	}
-	strcpy(full_help_text, (char*)help_ptr);
-	printf("hola4\n");
+	strcpy_s(full_help_text, strlen((char*)help_ptr) + 1, (char*)help_ptr);
 
 	// Init arrays
 	for (size_t i = 0; i < MAX_NODE_LEVEL; i++) {
 		current_nodes[i] = NULL;
 		current_nodes_already_included[i] = false;
 	}
-	printf("hola5\n");
 
 	if ("" == keyword) {
 		return full_help_text;
@@ -63,19 +57,20 @@ char* getAdvancedHelpForKeyword(_In_ char keyword[], _In_ void* help_ptr) {
 	//    Then the last node is processed.
 	//    Finally, current_node is assigned to new_node (=NULL), allowing the loop to exit
 	int iteration = 0;
+	char* strtok_ctx = NULL;
 	do {
 		iteration++;
-		printf("\n\niteration %d\n", iteration);
+		//printf("\n\niteration %d\n", iteration);
 
 		if (NULL == line) {
-			line = strtok(full_help_text, "\n");
+			line = strtok_s(full_help_text, "\n", &strtok_ctx);
 		} else {
-			line = strtok(NULL, "\n");
+			line = strtok_s(NULL, "\n", &strtok_ctx);
 		}
 		new_node = getLineNode(line, current_node);
-		printf("  line:\n%s\n", line);
-		printf("  current_node:\n%s\n", current_node);
-		printf("  new_node:\n%s\n", new_node);
+		//printf("  line:\n%s\n", line);
+		//printf("  current_node:\n%s\n", current_node);
+		//printf("  new_node:\n%s\n", new_node);
 
 		//If current_node is NULL, assign it to the first node and continue, because it is the first iteration
 		if (NULL == current_node) {
@@ -86,16 +81,16 @@ char* getAdvancedHelpForKeyword(_In_ char keyword[], _In_ void* help_ptr) {
 		if (new_node == current_node || NULL == current_node) {
 			continue;
 		}
-		printf("  Proceed to processing...\n");
+		//printf("  Proceed to processing...\n");
 
 		// Process current node (already complete with all its lines)
 		current_node_level = getNodeLevel(current_node);
-		printf("  current_node_level=%llu\n", current_node_level);
+		//printf("  current_node_level=%llu\n", current_node_level);
 
 		// Check that nodes do not skip levels (eg, a level 1 node followed by level 3 node without a level 2 node in between)
 		for (size_t i = 0; i < current_node_level; i++) {
 			if (NULL == current_nodes[i]) {
-				printf("current_nodes[%llu]=NULL\n", i);
+				//printf("current_nodes[%llu]=NULL\n", i);
 				goto HELP_FORMAT_ERROR_LABEL;
 			}
 		}
@@ -124,9 +119,9 @@ char* getAdvancedHelpForKeyword(_In_ char keyword[], _In_ void* help_ptr) {
 
 			// Search the keyword in the node
 			if (NULL != strstr(current_node, keyword)) {	// Keyword found!
-			//if (current_node != NULL && NULL != strstr(current_node, keyword)) {	// Keyword found!
-				// Include parent nodes if not already included
-				for (size_t i = 0; i < current_node_level+1; i++) {
+				//if (current_node != NULL && NULL != strstr(current_node, keyword)) {	// Keyword found!
+					// Include parent nodes if not already included
+				for (size_t i = 0; i < current_node_level + 1; i++) {
 					if (!current_nodes_already_included[i]) {
 						if ((0 != strAppendRealloc(&help_to_show, current_nodes[i])) || (0 != strAppendRealloc(&help_to_show, "\n"))) {
 							goto HELP_NOMEM_ERROR_LABEL;
@@ -170,7 +165,7 @@ HELP_UNINITIALIZED_ERROR_LABEL:
 		goto HELP_NOMEM_ERROR_LABEL;
 		//return NULL;	// Not even possible to output the error
 	}
-	strcpy(help_to_show, ADVANCED_HELP_UNINITIALIZED_ERROR);
+	strcpy_s(help_to_show, strlen(ADVANCED_HELP_UNINITIALIZED_ERROR) + 1, ADVANCED_HELP_UNINITIALIZED_ERROR);
 	return help_to_show;
 
 
@@ -189,7 +184,7 @@ HELP_KEYWORD_NOT_FOUND_LABEL:
 		goto HELP_NOMEM_ERROR_LABEL;
 		//return NULL;	// Not even possible to output the error
 	}
-	strcpy(help_to_show, ADVANCED_HELP_KEYWORD_NOT_FOUND_INFO);
+	strcpy_s(help_to_show, strlen(ADVANCED_HELP_KEYWORD_NOT_FOUND_INFO) + 1, ADVANCED_HELP_KEYWORD_NOT_FOUND_INFO);
 	return help_to_show;
 
 
@@ -208,7 +203,7 @@ HELP_FORMAT_ERROR_LABEL:
 		goto HELP_NOMEM_ERROR_LABEL;
 		//return NULL;	// Not even possible to output the error
 	}
-	strcpy(help_to_show, ADVANCED_HELP_FORMAT_ERROR);
+	strcpy_s(help_to_show, strlen(ADVANCED_HELP_FORMAT_ERROR) + 1, ADVANCED_HELP_FORMAT_ERROR);
 	return help_to_show;
 
 
@@ -226,11 +221,11 @@ HELP_NOMEM_ERROR_LABEL:
 	if (NULL == help_to_show) {
 		return NULL;	// Not even possible to output the error
 	}
-	strcpy(help_to_show, ADVANCED_HELP_NOMEM_ERROR);
+	strcpy_s(help_to_show, strlen(ADVANCED_HELP_NOMEM_ERROR) + 1, ADVANCED_HELP_NOMEM_ERROR);
 	return help_to_show;
 }
 
-char* getLineNode(_In_ char* new_line, _In_ char* current_node) {
+char* getLineNode(_In_ char* new_line, _In_opt_ char* current_node) {
 	if (NULL == new_line) {
 		return NULL;
 	}
@@ -303,7 +298,7 @@ int strAppendRealloc(_Inout_ char** dest, _In_ const char* src) {
 	*dest = tmp_ptr;
 
 	// Start copying in the first available position (current_len is 0 for the first allocation, and the end of the current string otherwise)
-	strcpy((*dest) + current_len, src);
+	strcpy_s((*dest) + current_len, current_len + src_len + 1, src);
 
 	return 0;
 }
@@ -316,24 +311,25 @@ void freeAdvancedHelp(_In_ void** help_ptr) {
 	return;
 }
 
-int initAdvancedHelp(_In_ char* help_file, _Inout_ void** help_ptr) {
+int initAdvancedHelp(_In_ const char* help_file, _Inout_ void** help_ptr) {
 	// Check if already initialized
 	if (NULL != *help_ptr) {
 		return -1;
 	}
 
 	FILE* fp = NULL;
-	fp = fopen(help_file, "r");
+	errno_t error = 0;
+	error = fopen_s(&fp, help_file, "r");
 	if (fp != NULL) {
 		// Go to EOF and get file_size
 		if (fseek(fp, 0L, SEEK_END) == 0) {
 			long file_size = ftell(fp);
-			if (file_size == -1) {
+			if (file_size == -1 || file_size < 0) {
 				goto INIT_HELP_ERROR_LABEL;
 			}
 
 			// Allocate buffer
-			*help_ptr = malloc(sizeof(char) * (file_size + 1));
+			*help_ptr = malloc(sizeof(char) * ((size_t)file_size + 1));
 			if (NULL == *help_ptr) {
 				goto INIT_HELP_ERROR_LABEL;
 			}
