@@ -311,56 +311,124 @@ void freeAdvancedHelp(_In_ void** help_ptr) {
 	return;
 }
 
-int initAdvancedHelp(_In_ const char* help_file, _Inout_ void** help_ptr) {
+int initAdvancedHelp(_In_ const char* help_filename, _Inout_ void** help_ptr) {
+	return getTextFromFile(help_filename, (char**)help_ptr);
+//	// Check if already initialized
+//	if (NULL != *help_ptr) {
+//		return -1;
+//	}
+//
+//	FILE* fp = NULL;
+//	errno_t error = 0;
+//	error = fopen_s(&fp, help_filename, "r");
+//	if (NULL == fp) {
+//		error = -1;
+//		goto INIT_HELP_ERROR_LABEL;
+//	}
+//	// Go to EOF and get file_size
+//	if (fseek(fp, 0L, SEEK_END) == 0) {
+//		long file_size = ftell(fp);
+//		if (file_size == -1 || file_size < 0) {
+//			error = -2;
+//			goto INIT_HELP_ERROR_LABEL;
+//		}
+//
+//		// Allocate buffer
+//		*help_ptr = malloc(sizeof(char) * ((size_t)file_size + 1));
+//		if (NULL == *help_ptr) {
+//			error = -2;
+//			goto INIT_HELP_ERROR_LABEL;
+//		}
+//
+//		// Reset file pointer to the start of the file
+//		if (fseek(fp, 0L, SEEK_SET) != 0) {
+//			error = -3;
+//			goto INIT_HELP_ERROR_LABEL;
+//		}
+//
+//		// Read the entire file into memory
+//		size_t read_len = fread(*help_ptr, sizeof(char), file_size, fp);
+//		if (ferror(fp) != 0) {
+//			//fputs("Error reading file", stderr);
+//			error = -4;
+//			goto INIT_HELP_ERROR_LABEL;
+//		} else {
+//			((char*)(*help_ptr))[read_len++] = '\0';
+//		}
+//	}
+//	fclose(fp);
+//
+//	return 0;
+//
+//INIT_HELP_ERROR_LABEL:
+//	if (NULL != fp) {
+//		fclose(fp);
+//		fp = NULL;
+//	}
+//	if (NULL != *help_ptr) {
+//		free(*help_ptr);
+//		*help_ptr = NULL;
+//	}
+//	return error;
+}
+
+int getTextFromFile(_In_ const char* text_filename, _Inout_ char** text_ptr) {
 	// Check if already initialized
-	if (NULL != *help_ptr) {
+	if (NULL != *text_ptr) {
 		return -1;
 	}
 
 	FILE* fp = NULL;
 	errno_t error = 0;
-	error = fopen_s(&fp, help_file, "r");
-	if (fp != NULL) {
-		// Go to EOF and get file_size
-		if (fseek(fp, 0L, SEEK_END) == 0) {
-			long file_size = ftell(fp);
-			if (file_size == -1 || file_size < 0) {
-				goto INIT_HELP_ERROR_LABEL;
-			}
-
-			// Allocate buffer
-			*help_ptr = malloc(sizeof(char) * ((size_t)file_size + 1));
-			if (NULL == *help_ptr) {
-				goto INIT_HELP_ERROR_LABEL;
-			}
-
-			// Reset file pointer to the start of the file
-			if (fseek(fp, 0L, SEEK_SET) != 0) {
-				goto INIT_HELP_ERROR_LABEL;
-			}
-
-			// Read the entire file into memory
-			size_t read_len = fread(*help_ptr, sizeof(char), file_size, fp);
-			if (ferror(fp) != 0) {
-				//fputs("Error reading file", stderr);
-				goto INIT_HELP_ERROR_LABEL;
-			} else {
-				((char*)(*help_ptr))[read_len++] = '\0';
-			}
-		}
-		fclose(fp);
+	error = fopen_s(&fp, text_filename, "r");
+	if (NULL == fp) {
+		error = -1;
+		goto GET_TEXT_ERROR_LABEL;
 	}
+	// Go to EOF and get file_size
+	if (fseek(fp, 0L, SEEK_END) == 0) {
+		long file_size = ftell(fp);
+		if (file_size == -1 || file_size < 0) {
+			error = -2;
+			goto GET_TEXT_ERROR_LABEL;
+		}
+
+		// Allocate buffer
+		*text_ptr = malloc(sizeof(char) * ((size_t)file_size + 1));
+		if (NULL == *text_ptr) {
+			error = -2;
+			goto GET_TEXT_ERROR_LABEL;
+		}
+
+		// Reset file pointer to the start of the file
+		if (fseek(fp, 0L, SEEK_SET) != 0) {
+			error = -3;
+			goto GET_TEXT_ERROR_LABEL;
+		}
+
+		// Read the entire file into memory
+		size_t read_len = fread(*text_ptr, sizeof(char), file_size, fp);
+		if (ferror(fp) != 0) {
+			//fputs("Error reading file", stderr);
+			error = -4;
+			goto GET_TEXT_ERROR_LABEL;
+		} else {
+			((char*)(*text_ptr))[read_len++] = '\0';
+		}
+	}
+	fclose(fp);
 
 	return 0;
 
-INIT_HELP_ERROR_LABEL:
+GET_TEXT_ERROR_LABEL:
 	if (NULL != fp) {
 		fclose(fp);
 		fp = NULL;
 	}
-	if (NULL != *help_ptr) {
-		free(*help_ptr);
-		*help_ptr = NULL;
+	if (NULL != *text_ptr) {
+		free(*text_ptr);
+		*text_ptr = NULL;
 	}
-	return -2;
+	return error;
 }
+

@@ -33,8 +33,10 @@
 /////   FUNCTION DEFINITIONS   /////
 
 char* getAdvancedHelpForKeyword(_In_ const char* keyword, _In_ void* help_ptr);
-int initAdvancedHelp(_In_ const char* help_file, _Inout_ void** help_ptr);
+int initAdvancedHelp(_In_ const char* help_filename, _Inout_ void** help_ptr);
 void freeAdvancedHelp(_In_ void** help_ptr);
+
+int getTextFromFile(_In_ const char* text_filename, _Inout_ char** text_ptr);
 
 int strAppendRealloc(_Inout_ char** dest, _In_ const char* src);
 
