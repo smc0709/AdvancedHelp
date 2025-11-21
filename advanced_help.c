@@ -231,6 +231,7 @@ WCHAR* getAdvancedHelpForKeywordW(_In_ const WCHAR* keyword, _In_ void* help_ptr
 	WCHAR* full_help_text = NULL;
 	WCHAR* current_nodes[MAX_NODE_LEVEL] = { 0 };
 	bool current_nodes_already_included[MAX_NODE_LEVEL] = { 0 };
+	size_t msg_len = 0;
 
 	if (NULL == help_ptr) {
 		goto HELP_UNINITIALIZED_ERROR_LABEL;
@@ -367,12 +368,13 @@ HELP_UNINITIALIZED_ERROR_LABEL:
 		full_help_text = NULL;
 	}
 	// Try to copy the error description as output
-	help_to_show = (WCHAR*)malloc(wcslen(WTEXT(ADVANCED_HELP_UNINITIALIZED_ERROR)) + 1);
+	msg_len = wcslen(WTEXT(ADVANCED_HELP_UNINITIALIZED_ERROR));
+	help_to_show = (WCHAR*)malloc(sizeof(WCHAR)*(msg_len + 1));
 	if (NULL == help_to_show) {
 		goto HELP_NOMEM_ERROR_LABEL;
 		//return NULL;	// Not even possible to output the error
 	}
-	wcscpy_s(help_to_show, wcslen(WTEXT(ADVANCED_HELP_UNINITIALIZED_ERROR)) + 1, WTEXT(ADVANCED_HELP_UNINITIALIZED_ERROR));
+	wcscpy_s(help_to_show, msg_len + 1, WTEXT(ADVANCED_HELP_UNINITIALIZED_ERROR));
 	return help_to_show;
 
 
@@ -386,12 +388,13 @@ HELP_KEYWORD_NOT_FOUND_LABEL:
 		full_help_text = NULL;
 	}
 	// Try to copy the error description as output
-	help_to_show = (WCHAR*)malloc(wcslen(WTEXT(ADVANCED_HELP_KEYWORD_NOT_FOUND_INFO)) + 1);
+	msg_len = wcslen(WTEXT(ADVANCED_HELP_KEYWORD_NOT_FOUND_INFO));
+	help_to_show = (WCHAR*)malloc(sizeof(WCHAR) * (msg_len + 1));
 	if (NULL == help_to_show) {
 		goto HELP_NOMEM_ERROR_LABEL;
 		//return NULL;	// Not even possible to output the error
 	}
-	wcscpy_s(help_to_show, wcslen(WTEXT(ADVANCED_HELP_KEYWORD_NOT_FOUND_INFO)) + 1, WTEXT(ADVANCED_HELP_KEYWORD_NOT_FOUND_INFO));
+	wcscpy_s(help_to_show, msg_len + 1, WTEXT(ADVANCED_HELP_KEYWORD_NOT_FOUND_INFO));
 	return help_to_show;
 
 
@@ -405,12 +408,13 @@ HELP_FORMAT_ERROR_LABEL:
 		full_help_text = NULL;
 	}
 	// Try to copy the error description as output
-	help_to_show = (WCHAR*)malloc(wcslen(WTEXT(ADVANCED_HELP_FORMAT_ERROR)) + 1);
+	msg_len = wcslen(WTEXT(ADVANCED_HELP_FORMAT_ERROR));
+	help_to_show = (WCHAR*)malloc(sizeof(WCHAR)* (msg_len + 1));
 	if (NULL == help_to_show) {
 		goto HELP_NOMEM_ERROR_LABEL;
 		//return NULL;	// Not even possible to output the error
 	}
-	wcscpy_s(help_to_show, wcslen(WTEXT(ADVANCED_HELP_FORMAT_ERROR)) + 1, WTEXT(ADVANCED_HELP_FORMAT_ERROR));
+	wcscpy_s(help_to_show, msg_len + 1, WTEXT(ADVANCED_HELP_FORMAT_ERROR));
 	return help_to_show;
 
 
@@ -424,11 +428,12 @@ HELP_NOMEM_ERROR_LABEL:
 		full_help_text = NULL;
 	}
 	// Try to copy the error description as output
-	help_to_show = (WCHAR*)malloc(wcslen(WTEXT(ADVANCED_HELP_NOMEM_ERROR)) + 1);
+	msg_len = wcslen(WTEXT(ADVANCED_HELP_NOMEM_ERROR));
+	help_to_show = (WCHAR*)malloc(sizeof(WCHAR) * (msg_len + 1));
 	if (NULL == help_to_show) {
 		return NULL;	// Not even possible to output the error
 	}
-	wcscpy_s(help_to_show, wcslen(WTEXT(ADVANCED_HELP_NOMEM_ERROR)) + 1, WTEXT(ADVANCED_HELP_NOMEM_ERROR));
+	wcscpy_s(help_to_show, msg_len + 1, WTEXT(ADVANCED_HELP_NOMEM_ERROR));
 	return help_to_show;
 }
 
@@ -673,25 +678,20 @@ int getTextFromFile(_In_ const char* text_filename, _Inout_ char** text_ptr) {
 		// The error whatever the file opening function says
 		goto GET_TEXT_ERROR_LABEL;
 	}
-	// Go to EOF and get file_size
+	// Move pointer to EOF, get the file size, and rewind the pointer to the start of the file
 	if (fseek(fp, 0L, SEEK_END) == 0) {
 		long file_size = ftell(fp);
 		if (file_size == -1 || file_size < 0) {
 			error = -2;
 			goto GET_TEXT_ERROR_LABEL;
 		}
+		rewind(fp);
 
 		// Allocate buffer
 		size_t buf_size = sizeof(char) * ((size_t)file_size + 1);
 		*text_ptr = malloc(buf_size);
 		if (NULL == *text_ptr) {
 			error = -2;
-			goto GET_TEXT_ERROR_LABEL;
-		}
-
-		// Reset file pointer to the start of the file
-		if (fseek(fp, 0L, SEEK_SET) != 0) {
-			error = -3;
 			goto GET_TEXT_ERROR_LABEL;
 		}
 
@@ -702,7 +702,7 @@ int getTextFromFile(_In_ const char* text_filename, _Inout_ char** text_ptr) {
 			error = -4;
 			goto GET_TEXT_ERROR_LABEL;
 		} else {
-			((char*)(*text_ptr))[read_len] = '\0';
+			(*text_ptr)[read_len] = '\0';
 		}
 	}
 	fclose(fp);
@@ -730,42 +730,45 @@ int getTextFromFileW(_In_ const WCHAR* text_filename, _Inout_ WCHAR** text_ptr) 
 	}
 
 	FILE* fp = NULL;
+	FILE* fp2 = NULL;
 	errno_t error = 0;
 	error = _wfopen_s(&fp, text_filename, L"r, ccs=UTF-8");
+	//error = _wfopen_s(&fp, text_filename, L"rb");
 	if (NULL == fp) {
 		// The error whatever the file opening function says
 		goto GET_TEXT_W_ERROR_LABEL;
 	}
-	// Go to EOF and get file_size
+	// Move pointer to EOF, get the file size, and rewind the pointer to the start of the file
 	if (fseek(fp, 0L, SEEK_END) == 0) {
 		long file_size = ftell(fp);
 		if (file_size == -1 || file_size < 0) {
 			error = -2;
 			goto GET_TEXT_W_ERROR_LABEL;
 		}
+		rewind(fp);
 
 		// Allocate buffer
 		size_t buf_size = sizeof(WCHAR) * ((size_t)file_size + 1);
+		//size_t buf_size = file_size + sizeof(WCHAR);
 		*text_ptr = malloc(buf_size);
 		if (NULL == *text_ptr) {
 			error = -2;
 			goto GET_TEXT_W_ERROR_LABEL;
 		}
 
-		// Reset file pointer to the start of the file
-		if (fseek(fp, 0L, SEEK_SET) != 0) {
-			error = -3;
-			goto GET_TEXT_W_ERROR_LABEL;
-		}
-
 		// Read the entire file into memory
 		size_t read_len = fread_s(*text_ptr, buf_size, sizeof(WCHAR), file_size, fp);
-		if (ferror(fp) != 0) {
+		//size_t read_len = fread_s((void*)(*text_ptr), buf_size, 1, file_size, fp);
+		if (ferror(fp) != 0/* || read_len != file_size*/) {
 			//fputs("Error reading file", stderr);
+			printf("read_len = %llu, file_size = %lu\n", read_len, file_size);
 			error = -4;
 			goto GET_TEXT_W_ERROR_LABEL;
 		} else {
-			((WCHAR*)(*text_ptr))[read_len] = L'\0';
+			printf("read_len = %llu, file_size = %lu, buf_size = %llu\n", read_len, file_size, buf_size);
+			(*text_ptr)[read_len] = L'\0';
+			//(*text_ptr)[read_len / sizeof(wchar_t)] = L'\0';
+			printf("bine");
 		}
 	}
 	fclose(fp);
