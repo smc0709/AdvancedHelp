@@ -17,7 +17,7 @@
 
 /////   DEFINES   /////
 
-#define MAX_NODE_LEVEL 5
+#define MAX_NODE_LEVEL 16
 #define NODE_LEVEL_CHAR '\t'
 #define NODE_START_CHAR '\0'	// If null (= '\0'), then every new line will be interpreted as a new node (e.g. a new section or a new param), which means nodes will be one-liners
 

@@ -40,7 +40,7 @@ char* getAdvancedHelpForKeyword(_In_ const char* keyword, _In_ void* help_ptr) {
 		current_nodes_already_included[i] = false;
 	}
 
-	if ("" == keyword) {
+	if (0 == strcmp("", keyword)) {
 		return full_help_text;
 	}
 
