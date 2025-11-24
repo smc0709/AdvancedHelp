@@ -1,10 +1,12 @@
 #ifndef ADVANCED_HELP_H
 #define ADVANCED_HELP_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
-
-/////   INCLUDES   /////
+	/////   INCLUDES   /////
 #include <Windows.h>
 #include <stdbool.h>
 
@@ -39,24 +41,28 @@
 
 /////   FUNCTION DEFINITIONS   /////
 
-char* getAdvancedHelpForKeyword(_In_ const char* keyword, _In_ void* help_ptr);
-WCHAR* getAdvancedHelpForKeywordW(_In_ const WCHAR* keyword, _In_ void* help_ptr);
+	char* getAdvancedHelpForKeyword(_In_ const char* keyword, _In_ void* help_ptr);
+	WCHAR* getAdvancedHelpForKeywordW(_In_ const WCHAR* keyword, _In_ void* help_ptr);
 
-int initAdvancedHelp(_In_ const char* help_filename, _Inout_ void** help_ptr);
-int initAdvancedHelpW(_In_ const WCHAR* help_filename, _Inout_ void** help_ptr);
+	int initAdvancedHelp(_In_ const char* help_filename, _Inout_ void** help_ptr);
+	int initAdvancedHelpW(_In_ const WCHAR* help_filename, _Inout_ void** help_ptr);
 
-void freeAdvancedHelp(_In_ void** help_ptr);
-void freeAdvancedHelpW(_In_ void** help_ptr);
+	void freeAdvancedHelp(_In_ void** help_ptr);
+	void freeAdvancedHelpW(_In_ void** help_ptr);
 
-int getTextFromFile(_In_ const char* text_filename, _Inout_ char** text_ptr);
-int getTextFromFileW(_In_ const WCHAR* text_filename, _Inout_ WCHAR** text_ptr);
+	int getTextFromFile(_In_ const char* text_filename, _Inout_ char** text_ptr);
+	int getTextFromFileW(_In_ const WCHAR* text_filename, _Inout_ WCHAR** text_ptr);
 
 
-int strAppendRealloc(_Inout_ char** dest, _In_ const char* src);
-int wcsAppendRealloc(_Inout_ WCHAR** dest, _In_ const WCHAR* src);
+	int strAppendRealloc(_Inout_ char** dest, _In_ const char* src);
+	int wcsAppendRealloc(_Inout_ WCHAR** dest, _In_ const WCHAR* src);
 
-void saveCurrentLocaleAndSetUTF8();
-void restorePreviousLocale();
+	void saveCurrentLocaleAndSetUTF8();
+	void restorePreviousLocale();
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // ADVANCED_HELP_H
