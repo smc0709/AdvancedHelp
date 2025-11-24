@@ -6,6 +6,13 @@
 
 
 
+/////   GLOBAL VARS   /////
+
+char* old_locale = NULL;
+
+
+
+
 /////   FUNCTION DEFINITIONS   /////
 
 char* getLineNode(_In_ char* new_line, _In_opt_ char* current_node);
@@ -18,7 +25,7 @@ size_t getNodeLevelW(_In_ const WCHAR* current_node);
 
 /////   FUNCTION IMPLEMENTATIONS   /////
 
-// Finds all the nodes which contain the keyword and prints all parent sections and subsections like a tree
+// Finds all the nodes which contain the keyword and retrieves all parent sections and subsections like a tree
 // The returned pointer must be freed by function caller
 char* getAdvancedHelpForKeyword(_In_ const char* keyword, _In_ void* help_ptr) {
 	char* help_to_show = NULL;
@@ -234,14 +241,20 @@ WCHAR* getAdvancedHelpForKeywordW(_In_ const WCHAR* keyword, _In_ void* help_ptr
 	size_t msg_len = 0;
 
 	if (NULL == help_ptr) {
+		//printf("UNINITIALIZED\n");
 		goto HELP_UNINITIALIZED_ERROR_LABEL;
 	}
 
-	full_help_text = (WCHAR*)malloc(wcslen((WCHAR*)help_ptr) + 1);
+	full_help_text = (WCHAR*)malloc(sizeof(WCHAR) * (wcslen((WCHAR*)help_ptr) + 1));
 	if (NULL == full_help_text) {
+		//printf("NO MEM\n");
 		goto HELP_NOMEM_ERROR_LABEL;
 	}
-	wcscpy_s(full_help_text, wcslen((WCHAR*)help_ptr) + 1, (WCHAR*)help_ptr);
+	errno_t error = wcscpy_s(full_help_text, wcslen((WCHAR*)help_ptr) + 1, (WCHAR*)help_ptr); // Size must include null termination (L'\0')
+	if (0 != error) {
+		//printf("ERROR: an error (%d) occurred when copying the help to full_help_text\n", error);
+		goto HELP_FORMAT_ERROR_LABEL;
+	}
 
 	// Init arrays
 	for (size_t i = 0; i < MAX_NODE_LEVEL; i++) {
@@ -250,6 +263,7 @@ WCHAR* getAdvancedHelpForKeywordW(_In_ const WCHAR* keyword, _In_ void* help_ptr
 	}
 
 	if (0 == wcscmp(L"", keyword)) {
+		//printf("NO keyword\n");
 		return full_help_text;
 	}
 
@@ -320,7 +334,7 @@ WCHAR* getAdvancedHelpForKeywordW(_In_ const WCHAR* keyword, _In_ void* help_ptr
 		// Check if this node is forced to be added (due to parent node included the keyword)
 		if (forced_include_min_level < current_node_level) {
 			if ((0 != wcsAppendRealloc(&help_to_show, current_node)) || (0 != wcsAppendRealloc(&help_to_show, L"\n"))) {
-					goto HELP_NOMEM_ERROR_LABEL;
+				goto HELP_NOMEM_ERROR_LABEL;
 			}
 		} else {
 			// Stop forcing to include
@@ -369,7 +383,7 @@ HELP_UNINITIALIZED_ERROR_LABEL:
 	}
 	// Try to copy the error description as output
 	msg_len = wcslen(WTEXT(ADVANCED_HELP_UNINITIALIZED_ERROR));
-	help_to_show = (WCHAR*)malloc(sizeof(WCHAR)*(msg_len + 1));
+	help_to_show = (WCHAR*)malloc(sizeof(WCHAR) * (msg_len + 1));
 	if (NULL == help_to_show) {
 		goto HELP_NOMEM_ERROR_LABEL;
 		//return NULL;	// Not even possible to output the error
@@ -409,7 +423,7 @@ HELP_FORMAT_ERROR_LABEL:
 	}
 	// Try to copy the error description as output
 	msg_len = wcslen(WTEXT(ADVANCED_HELP_FORMAT_ERROR));
-	help_to_show = (WCHAR*)malloc(sizeof(WCHAR)* (msg_len + 1));
+	help_to_show = (WCHAR*)malloc(sizeof(WCHAR) * (msg_len + 1));
 	if (NULL == help_to_show) {
 		goto HELP_NOMEM_ERROR_LABEL;
 		//return NULL;	// Not even possible to output the error
@@ -532,7 +546,7 @@ int strAppendRealloc(_Inout_ char** dest, _In_ const char* src) {
 	// Get lengths
 	size_t src_len = strlen(src);
 	size_t current_len = 0;
-	if (NULL  != *dest) {
+	if (NULL != *dest) {
 		current_len = strlen(*dest);
 	}
 
@@ -600,63 +614,6 @@ void freeAdvancedHelpW(_In_ void** help_ptr) {
 
 int initAdvancedHelp(_In_ const char* help_filename, _Inout_ void** help_ptr) {
 	return getTextFromFile(help_filename, (char**)help_ptr);
-//	// Check if already initialized
-//	if (NULL != *help_ptr) {
-//		return -1;
-//	}
-//
-//	FILE* fp = NULL;
-//	errno_t error = 0;
-//	error = fopen_s(&fp, help_filename, "r");
-//	if (NULL == fp) {
-//		error = -1;
-//		goto INIT_HELP_ERROR_LABEL;
-//	}
-//	// Go to EOF and get file_size
-//	if (fseek(fp, 0L, SEEK_END) == 0) {
-//		long file_size = ftell(fp);
-//		if (file_size == -1 || file_size < 0) {
-//			error = -2;
-//			goto INIT_HELP_ERROR_LABEL;
-//		}
-//
-//		// Allocate buffer
-//		*help_ptr = malloc(sizeof(char) * ((size_t)file_size + 1));
-//		if (NULL == *help_ptr) {
-//			error = -2;
-//			goto INIT_HELP_ERROR_LABEL;
-//		}
-//
-//		// Reset file pointer to the start of the file
-//		if (fseek(fp, 0L, SEEK_SET) != 0) {
-//			error = -3;
-//			goto INIT_HELP_ERROR_LABEL;
-//		}
-//
-//		// Read the entire file into memory
-//		size_t read_len = fread(*help_ptr, sizeof(char), file_size, fp);
-//		if (ferror(fp) != 0) {
-//			//fputs("Error reading file", stderr);
-//			error = -4;
-//			goto INIT_HELP_ERROR_LABEL;
-//		} else {
-//			((char*)(*help_ptr))[read_len++] = '\0';
-//		}
-//	}
-//	fclose(fp);
-//
-//	return 0;
-//
-//INIT_HELP_ERROR_LABEL:
-//	if (NULL != fp) {
-//		fclose(fp);
-//		fp = NULL;
-//	}
-//	if (NULL != *help_ptr) {
-//		free(*help_ptr);
-//		*help_ptr = NULL;
-//	}
-//	return error;
 }
 int initAdvancedHelpW(_In_ const WCHAR* help_filename, _Inout_ void** help_ptr) {
 	return getTextFromFileW(help_filename, (WCHAR**)help_ptr);
@@ -761,14 +718,13 @@ int getTextFromFileW(_In_ const WCHAR* text_filename, _Inout_ WCHAR** text_ptr) 
 		//size_t read_len = fread_s((void*)(*text_ptr), buf_size, 1, file_size, fp);
 		if (ferror(fp) != 0/* || read_len != file_size*/) {
 			//fputs("Error reading file", stderr);
-			printf("read_len = %llu, file_size = %lu\n", read_len, file_size);
+			//printf("read_len = %llu, file_size = %lu\n", read_len, file_size);
 			error = -4;
 			goto GET_TEXT_W_ERROR_LABEL;
 		} else {
-			printf("read_len = %llu, file_size = %lu, buf_size = %llu\n", read_len, file_size, buf_size);
+			//printf("read_len = %llu, file_size = %lu, buf_size = %llu\n", read_len, file_size, buf_size);
 			(*text_ptr)[read_len] = L'\0';
 			//(*text_ptr)[read_len / sizeof(wchar_t)] = L'\0';
-			printf("bine");
 		}
 	}
 	fclose(fp);
@@ -785,5 +741,24 @@ GET_TEXT_W_ERROR_LABEL:
 		*text_ptr = NULL;
 	}
 	return error;
+}
+
+void saveCurrentLocaleAndSetUTF8() {
+	// Save current locale
+	char* old_locale = setlocale(LC_CTYPE, NULL);
+
+	// Set local configuration (allow any special or regional character)
+	if (NULL == setlocale(LC_ALL, "C.UTF-8")) {
+		// If "C.UTF-8" configuration fails, fall back to system locale (common in Windows systems that do not follow POSIX (C.UTF-8)).
+		// Often sufficient with "". Also "en_US.UTF-8" or ".65001" for UTF-8
+		if (NULL == setlocale(LC_ALL, "")) {
+			printf("WARNING: locale could not be set to allow any characters in the help manual.\n");
+		}
+	}
+	//printf("Current Locale: %s\n", setlocale(LC_CTYPE, NULL));
+}
+
+void restorePreviousLocale() {
+	setlocale(LC_CTYPE, old_locale);
 }
 

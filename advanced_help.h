@@ -13,6 +13,8 @@
 #include <string.h>
 
 #include <wchar.h>
+#include <locale.h>
+
 
 
 
@@ -52,6 +54,9 @@ int getTextFromFileW(_In_ const WCHAR* text_filename, _Inout_ WCHAR** text_ptr);
 
 int strAppendRealloc(_Inout_ char** dest, _In_ const char* src);
 int wcsAppendRealloc(_Inout_ WCHAR** dest, _In_ const WCHAR* src);
+
+void saveCurrentLocaleAndSetUTF8();
+void restorePreviousLocale();
 
 
 #endif // ADVANCED_HELP_H
