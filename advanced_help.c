@@ -8,7 +8,7 @@
 
 /////   GLOBAL VARS   /////
 
-char* old_locale = NULL;
+char* saved_orig_locale = NULL;
 
 
 
@@ -745,20 +745,70 @@ GET_TEXT_W_ERROR_LABEL:
 
 void saveCurrentLocaleAndSetUTF8() {
 	// Save current locale
-	char* old_locale = setlocale(LC_CTYPE, NULL);
+	char* orig_locale = setlocale(LC_CTYPE, NULL);
+	if (NULL != orig_locale) {
+		saved_orig_locale = malloc(strlen(orig_locale) + 1);
+	}
+	if (NULL != orig_locale &&  NULL != saved_orig_locale) {
+		strcpy(saved_orig_locale, orig_locale);
+	} else {
+		printf("WARNING: Could not set UTF-8 locale due to lack of memory. Multibyte conversion may fail.\n");
+		return;
+	}
 
-	// Set local configuration (allow any special or regional character)
-	if (NULL == setlocale(LC_ALL, "C.UTF-8")) {
-		// If "C.UTF-8" configuration fails, fall back to system locale (common in Windows systems that do not follow POSIX (C.UTF-8)).
-		// Often sufficient with "". Also "en_US.UTF-8" or ".65001" for UTF-8
-		if (NULL == setlocale(LC_ALL, "")) {
-			printf("WARNING: locale could not be set to allow any characters in the help manual.\n");
+	// Ensure that console is UTF-8
+	//if (GetConsoleOutputCP() != 65001) {
+	//	SetConsoleOutputCP(65001);
+	//}
+
+	// Attempt to set a UTF-8 compatible locale using a fallback strategy: most common UTF-8 locales across different operating systems.
+	char* target_locale = NULL;
+	const char* utf8_options[] = {
+		"C.UTF-8",      // POSIX standard (Linux, macOS)
+		".65001",       // Windows Code Page for UTF-8
+		"en_US.UTF-8",  // Common locale with UTF-8 support
+		"es_ES.UTF-8",  // Spanish locale with UTF-8 support
+		"",             // User's system locale (often UTF-8, used as a last resort)
+		NULL            // List terminator
+	};
+
+	for (int i = 0; utf8_options[i] != NULL; ++i) {
+		// Attempt to set the current locale option (affecting all categories, LC_ALL).
+		target_locale = setlocale(LC_ALL, utf8_options[i]);
+
+		if (target_locale != NULL) {
+			// Success: setlocale returned a valid locale string.
+			printf("SUCCESS: Locale set to '%s' using option '%s'.\n", target_locale, utf8_options[i]);
+			break; // Exit the loop on success
 		}
 	}
-	//printf("Current Locale: %s\n", setlocale(LC_CTYPE, NULL));
+	if (target_locale == NULL) {
+		printf("WARNING: No suitable UTF-8 locale could be set. Multibyte conversion may fail.\n");
+	}
+
+	//// Set local configuration (allow any special or regional character)
+	//if (NULL == setlocale(LC_ALL, "C.UTF-8")) {
+	//	printf("WARNING: locale could not be set to allow any UTF-8 characters in the help manual.\n");
+	//	// If "C.UTF-8" configuration fails, fall back to system locale (common in Windows systems that do not follow POSIX (C.UTF-8)).
+	//	// Often sufficient with "". Also "en_US.UTF-8" or ".65001" for UTF-8
+	//	if (NULL == setlocale(LC_ALL, ".UTF-8")) {
+	//		printf("WARNING: locale could not be set to allow Spanish characters in the help manual.\n");
+	//		if (NULL == setlocale(LC_ALL, "")) {
+	//			printf("WARNING: locale could not be set to allow any regional characters in the help manual.\n");
+	//		}
+	//	}
+	//}
+	printf("Current Locale: %s\n", setlocale(LC_CTYPE, NULL));
 }
 
 void restorePreviousLocale() {
-	setlocale(LC_CTYPE, old_locale);
+	if (NULL != saved_orig_locale) {
+		setlocale(LC_ALL, saved_orig_locale);
+		free(saved_orig_locale);
+		saved_orig_locale = NULL;
+		printf("Locale Restored To: %s\n", setlocale(LC_CTYPE, NULL));
+	} else {
+		printf("WARNING: No previous locale was saved to restore.\n");
+	}
 }
 
